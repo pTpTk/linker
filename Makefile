@@ -5,4 +5,4 @@ debug:
 	g++ -DDEBUG -g $(wildcard *.cpp) -o link
 
 test:
-	./link ../assembler/output.o
+	./link ../assembler/output.o output.x

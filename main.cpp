@@ -2,12 +2,15 @@
 #include <cassert>
 
 void ReadInput(std::ifstream& ifs);
+void WriteOutput(std::ofstream& ofs);
 
 int main(int argc, char** argv) {
-    assert(argc == 2);
+    assert(argc == 3);
     std::ifstream ifs(argv[1], std::ios::binary);
+    std::ofstream ofs(argv[2], std::ios::binary);
 
     ReadInput(ifs);
+    WriteOutput(ofs);
 
     return 0;
 }
