@@ -5,6 +5,12 @@
 #include <sstream>
 #include <cstring>
 
+#ifdef DEBUG
+    #define D(...) printf(__VA_ARGS__)
+#else
+    #define D(...)
+#endif
+
 constexpr uint file_header_size = 0x34;
 
 struct Section_Header
@@ -25,19 +31,18 @@ struct Section_Header
 class Section
 {
     public:
-    std::vector<char> bin;
     std::string name;
+    std::vector<char> bin;
 
     void alloc(uint size) { bin.resize(size); }
 };
 
-void BuildSections(std::ifstream ifs){}
+std::vector<char> file_header(file_header_size);
+uint32_t e_shoff;  
+uint16_t e_shnum;
+uint16_t e_shstrndx;
 
-int main(int argc, char** argv) {
-    assert(argc == 2);
-    std::ifstream ifs(argv[1], std::ios::binary);
-
-    std::vector<char> file_header(file_header_size);
+void ReadFileHeader(std::ifstream& ifs) {
     ifs.read(file_header.data(), file_header_size);
 
     assert(file_header[0] == 0x7F);
@@ -45,54 +50,54 @@ int main(int argc, char** argv) {
     assert(file_header[2] == 0x4C);
     assert(file_header[3] == 0x46);
 
-    printf("file_header:\n");
-    int i = 0;
-    for(auto c : file_header) {
-        printf("%02x ", c);
-        if(++i % 16 == 0) printf("\n");
+    {
+        D("file_header:\n");
+        int i = 0;
+        for(auto c : file_header) {
+            D("%02x ", c);
+            if(++i % 16 == 0) D("\n");
+        }
+        D("\n");
     }
-    printf("\n");
 
     uint32_t* u32_ptr = (uint32_t*)file_header.data();
     uint16_t* u16_ptr = (uint16_t*)file_header.data();
 
-    uint32_t e_shoff    = u32_ptr[0x08];
-    uint16_t e_shnum    = u16_ptr[0x18];
-    uint16_t e_shstrndx = u16_ptr[0x19];
+    e_shoff    = u32_ptr[0x08];
+    e_shnum    = u16_ptr[0x18];
+    e_shstrndx = u16_ptr[0x19];
 
-    printf("e_shoff = %x, e_shnum = %d, e_shstrndx = %d\n",
+    D("e_shoff = %x, e_shnum = %d, e_shstrndx = %d\n",
         e_shoff, e_shnum, e_shstrndx);
+}
 
-    std::vector<Section_Header> section_headers(e_shnum);
-    Section_Header& shstrtab_section_header = section_headers[e_shstrndx];
-    
+std::vector<Section_Header> section_headers;
+
+void ReadSectionHeaders(std::ifstream& ifs) {
+    section_headers.resize(e_shnum);
+
     ifs.seekg(e_shoff);
 
     for(int i = 0; i < e_shnum; i++) {
         ifs.read(section_headers[i].bin.data(), 0x28);
     }
+}
 
-    printf("shstrtab section header:\n");
-    i = 0;
-    for(auto& c : shstrtab_section_header.bin) {
-        printf("%02x ", c);
-        if(++i % 16 == 0) printf("\n");
-    }
-    printf("\n");
+std::vector<char> shstrtab;
 
-    std::vector<char> shstrtab(shstrtab_section_header.sh_size);
+void ReadShstrtab(std::ifstream& ifs) {
+    Section_Header& shstrtab_section_header 
+        = section_headers[e_shstrndx];
+
+    shstrtab.resize(shstrtab_section_header.sh_size);
 
     ifs.seekg(shstrtab_section_header.sh_offset);
     ifs.read(shstrtab.data(), shstrtab.size());
+}
 
-    printf("shstrtab section:\n");
-    i = 0;
-    for(auto& c : shstrtab) {
-        printf("%02x ", c);
-        if(++i % 16 == 0) printf("\n");
-    }
-    printf("\n");
+std::vector<Section> sections;
 
+void ReadSections(std::ifstream& ifs) {
     for(int j = 1; j < e_shnum; ++j) {
         auto& sh = section_headers[j];
 
@@ -103,14 +108,23 @@ int main(int argc, char** argv) {
         ifs.seekg(sh.sh_offset);
         ifs.read(section.bin.data(), sh.sh_size);
 
-        printf("%s section:\n", section.name.c_str());
-        i = 0;
-        for(auto& c : section.bin) {
-            printf("%02x ", (unsigned char)c);
-            if(++i % 16 == 0) printf("\n");
-        }
-        printf("\n");
-    }
+        sections.push_back(section);
 
-    return 0;
+        {
+            D("%s section:\n", section.name.c_str());
+            int i = 0;
+            for(auto& c : section.bin) {
+                D("%02x ", (unsigned char)c);
+                if(++i % 16 == 0) D("\n");
+            }
+            D("\n");
+        }
+    }
+}
+
+void ReadInput(std::ifstream& ifs) {
+    ReadFileHeader(ifs);
+    ReadSectionHeaders(ifs);
+    ReadShstrtab(ifs);
+    ReadSections(ifs);
 }
