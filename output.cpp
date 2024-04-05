@@ -44,16 +44,9 @@ class Section
 };
 
 extern std::vector<Section> sections;
+extern Section text;
 
 void WriteOutput(std::ofstream& ofs) {
-    Section text_section;
-    for(auto& s : sections) {
-        if(s.name == ".text") {
-            text_section = s;
-            break;
-        }
-    }
-
     e_type = 0x2;
     e_entry = 0x08049000;
     e_phnum = 2;
@@ -71,7 +64,7 @@ void WriteOutput(std::ofstream& ofs) {
     phdr.p_align  = 0x1000;
 
     Program_Header ph_text;
-    int text_size = text_section.bin.size();
+    int text_size = text.bin.size();
     ph_text.p_type   = 0x01;
     ph_text.p_offset = 0x1000;
     ph_text.p_vaddr  = 0x08048000 + 0x1000;
@@ -85,5 +78,5 @@ void WriteOutput(std::ofstream& ofs) {
     ofs.write(ph_text.bin.data(), 0x20);
 
     ofs.seekp(0x1000);
-    ofs.write(text_section.bin.data(), text_size);
+    ofs.write(text.bin.data(), text_size);
 }

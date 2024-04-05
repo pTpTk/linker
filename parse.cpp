@@ -30,7 +30,7 @@ struct Section_Header
 
 class Section
 {
-    public:
+  public:
     std::string name;
     std::vector<char> bin;
 
@@ -96,6 +96,7 @@ void ReadShstrtab(std::ifstream& ifs) {
 }
 
 std::vector<Section> sections;
+Section text;
 
 void ReadSections(std::ifstream& ifs) {
     for(int j = 1; j < e_shnum; ++j) {
@@ -118,6 +119,13 @@ void ReadSections(std::ifstream& ifs) {
                 if(++i % 16 == 0) D("\n");
             }
             D("\n");
+        }
+    }
+
+    for(auto& s : sections) {
+        if(s.name == ".text") {
+            text = s;
+            break;
         }
     }
 }
