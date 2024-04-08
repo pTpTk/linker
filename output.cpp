@@ -2,7 +2,7 @@
 #include <vector>
 #include <array>
 
-extern std::vector<char> text;
+extern std::vector<char> texts;
 
 namespace {
 
@@ -58,7 +58,7 @@ void WritePHDR(std::ofstream& ofs) {
 
 void WriteText(std::ofstream& ofs) {
     Program_Header ph_text;
-    int text_size = text.size();
+    int text_size = texts.size();
     ph_text.p_type   = 0x01;
     ph_text.p_offset = 0x1000;
     ph_text.p_vaddr  = 0x08048000 + 0x1000;
@@ -71,7 +71,7 @@ void WriteText(std::ofstream& ofs) {
     ofs.write(ph_text.bin.data(), 0x20);
 
     ofs.seekp(0x1000);
-    ofs.write(text.data(), text_size);
+    ofs.write(texts.data(), text_size);
 }
 
 } // namespace

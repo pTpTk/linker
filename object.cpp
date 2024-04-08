@@ -1,57 +1,7 @@
-#include <iostream>
-#include <fstream>
-#include <cassert>
-#include <vector>
-#include <sstream>
-#include <cstring>
+#include "object.h"
 
-#include "debug.h"
-
-// global vars
-std::vector<char> text;
-std::vector<char> symtab;
-std::vector<char> strtab;
-std::vector<char> rel_text;
-
-namespace {
-
-constexpr uint file_header_size = 0x34;
-
-struct Section_Header
-{
-    std::vector<char> bin = std::vector<char>(0x28,0);
-    int& sh_name    = (int&)bin[0x00];
-    int& sh_type    = (int&)bin[0x04];
-    int& sh_flags   = (int&)bin[0x08];
-    int& sh_addr    = (int&)bin[0x0C];
-    int& sh_offset  = (int&)bin[0x10];
-    int& sh_size    = (int&)bin[0x14];
-    int& sh_link    = (int&)bin[0x18];
-    int& sh_info    = (int&)bin[0x1C];
-    int& sh_align   = (int&)bin[0x20];
-    int& sh_entsize = (int&)bin[0x24];
-};
-
-class Section
-{
-  public:
-    std::string name;
-    std::vector<char> bin;
-
-    void alloc(uint size) { bin.resize(size); }
-};
-
-std::vector<char> file_header(file_header_size);
-uint32_t& e_shoff    = (uint32_t&)file_header[0x20];
-uint16_t& e_shnum    = (uint16_t&)file_header[0x30];
-uint16_t& e_shstrndx = (uint16_t&)file_header[0x32];
-
-std::vector<Section_Header> section_headers;
-std::vector<char> shstrtab;
-std::vector<Section> sections;
-
-void ReadFileHeader(std::ifstream& ifs) {
-    ifs.read(file_header.data(), file_header_size);
+void ObjectFile::ReadFileHeader() {
+    ifs.read(file_header.data(), 0x34);
 
     assert(file_header[0] == 0x7F);
     assert(file_header[1] == 0x45);
@@ -72,7 +22,7 @@ void ReadFileHeader(std::ifstream& ifs) {
         e_shoff, e_shnum, e_shstrndx);
 }
 
-void ReadSectionHeaders(std::ifstream& ifs) {
+void ObjectFile::ReadSectionHeaders() {
     section_headers.resize(e_shnum);
 
     ifs.seekg(e_shoff);
@@ -82,7 +32,7 @@ void ReadSectionHeaders(std::ifstream& ifs) {
     }
 }
 
-void ReadShstrtab(std::ifstream& ifs) {
+void ObjectFile::ReadShstrtab() {
     Section_Header& shstrtab_section_header 
         = section_headers[e_shstrndx];
 
@@ -92,7 +42,7 @@ void ReadShstrtab(std::ifstream& ifs) {
     ifs.read(shstrtab.data(), shstrtab.size());
 }
 
-void ReadSections(std::ifstream& ifs) {
+void ObjectFile::ReadSections() {
     for(int j = 1; j < e_shnum; ++j) {
         auto& sh = section_headers[j];
 
@@ -134,13 +84,4 @@ void ReadSections(std::ifstream& ifs) {
             continue;
         }
     }
-}
-
-} // namespace
-
-void ReadInput(std::ifstream& ifs) {
-    ReadFileHeader(ifs);
-    ReadSectionHeaders(ifs);
-    ReadShstrtab(ifs);
-    ReadSections(ifs);
 }
