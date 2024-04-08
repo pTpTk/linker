@@ -5,11 +5,15 @@
 #include <sstream>
 #include <cstring>
 
-#ifdef DEBUG
-    #define D(...) printf(__VA_ARGS__)
-#else
-    #define D(...)
-#endif
+#include "debug.h"
+
+// global vars
+std::vector<char> text;
+std::vector<char> symtab;
+std::vector<char> strtab;
+std::vector<char> rel_text;
+
+namespace {
 
 constexpr uint file_header_size = 0x34;
 
@@ -38,9 +42,13 @@ class Section
 };
 
 std::vector<char> file_header(file_header_size);
-uint32_t e_shoff;  
-uint16_t e_shnum;
-uint16_t e_shstrndx;
+uint32_t& e_shoff    = (uint32_t&)file_header[0x20];
+uint16_t& e_shnum    = (uint16_t&)file_header[0x30];
+uint16_t& e_shstrndx = (uint16_t&)file_header[0x32];
+
+std::vector<Section_Header> section_headers;
+std::vector<char> shstrtab;
+std::vector<Section> sections;
 
 void ReadFileHeader(std::ifstream& ifs) {
     ifs.read(file_header.data(), file_header_size);
@@ -53,25 +61,16 @@ void ReadFileHeader(std::ifstream& ifs) {
     {
         D("file_header:\n");
         int i = 0;
-        for(auto c : file_header) {
+        for(unsigned char c : file_header) {
             D("%02x ", c);
             if(++i % 16 == 0) D("\n");
         }
         D("\n");
     }
 
-    uint32_t* u32_ptr = (uint32_t*)file_header.data();
-    uint16_t* u16_ptr = (uint16_t*)file_header.data();
-
-    e_shoff    = u32_ptr[0x08];
-    e_shnum    = u16_ptr[0x18];
-    e_shstrndx = u16_ptr[0x19];
-
     D("e_shoff = %x, e_shnum = %d, e_shstrndx = %d\n",
         e_shoff, e_shnum, e_shstrndx);
 }
-
-std::vector<Section_Header> section_headers;
 
 void ReadSectionHeaders(std::ifstream& ifs) {
     section_headers.resize(e_shnum);
@@ -83,8 +82,6 @@ void ReadSectionHeaders(std::ifstream& ifs) {
     }
 }
 
-std::vector<char> shstrtab;
-
 void ReadShstrtab(std::ifstream& ifs) {
     Section_Header& shstrtab_section_header 
         = section_headers[e_shstrndx];
@@ -94,9 +91,6 @@ void ReadShstrtab(std::ifstream& ifs) {
     ifs.seekg(shstrtab_section_header.sh_offset);
     ifs.read(shstrtab.data(), shstrtab.size());
 }
-
-std::vector<Section> sections;
-Section text;
 
 void ReadSections(std::ifstream& ifs) {
     for(int j = 1; j < e_shnum; ++j) {
@@ -124,11 +118,25 @@ void ReadSections(std::ifstream& ifs) {
 
     for(auto& s : sections) {
         if(s.name == ".text") {
-            text = s;
-            break;
+            text = s.bin;
+            continue;
+        }
+        if(s.name == ".symtab") {
+            symtab = s.bin;
+            continue;
+        }
+        if(s.name == ".strtab") {
+            strtab = s.bin;
+            continue;
+        }
+        if(s.name == ".rel.text") {
+            rel_text = s.bin;
+            continue;
         }
     }
 }
+
+} // namespace
 
 void ReadInput(std::ifstream& ifs) {
     ReadFileHeader(ifs);

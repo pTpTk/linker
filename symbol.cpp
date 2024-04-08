@@ -3,14 +3,14 @@
 #include <iostream>
 #include <cassert>
 
-class Section
-{
-  public:
-    std::string name;
-    std::vector<char> bin;
+#include "debug.h"
 
-    void alloc(uint size) { bin.resize(size); }
-};
+extern std::vector<char> text;
+extern std::vector<char> symtab;
+extern std::vector<char> strtab;
+extern std::vector<char> rel_text;
+
+namespace {
 
 struct Symbol
 {
@@ -21,29 +21,15 @@ struct Symbol
     : name(n), val(v) {}
 };
 
-extern std::vector<Section> sections;
 std::vector<Symbol> symbols;
 
 void GetSymbols() {
-    Section symtab;
-    Section strtab;
 
-    for(auto& s : sections) {
-        if(s.name == ".symtab") {
-            symtab = s;
-            continue;
-        }
-        if(s.name == ".strtab") {
-            strtab = s;
-            continue;
-        }
-    }
+    for(int i = 0x10; i < symtab.size(); i+=0x10) {
+        int st_name  = (int&)symtab[i];
+        int st_value = (int&)symtab[i+4];
 
-    for(int i = 0x10; i < symtab.bin.size(); i+=0x10) {
-        int st_name  = (int&)symtab.bin[i];
-        int st_value = (int&)symtab.bin[i+4];
-
-        std::string name(strtab.bin.data() + st_name);
+        std::string name(strtab.data() + st_name);
 
         symbols.emplace_back(name, st_value);
     }
@@ -53,17 +39,7 @@ void GetSymbols() {
     }
 }
 
-extern Section text;
-
 void Relocate() {
-    std::vector<char> rel_text;
-    for(auto& s : sections) {
-        if(s.name == ".rel.text") {
-            rel_text = s.bin;
-            break;
-        }
-    }
-
     for(int i = 0; i < rel_text.size(); i+=8) {
         uint r_offset = (uint&) rel_text[i];
         char r_type = rel_text[i+4];
@@ -72,7 +48,7 @@ void Relocate() {
         assert(r_type == 2);
         printf("r_offset = %x, r_sym = %x\n", r_offset, r_sym);
 
-        int& imm = (int&)text.bin[r_offset];
+        int& imm = (int&)text[r_offset];
         int S = symbols[r_sym-1].val;
         int P = r_offset + sizeof(int);
         imm = S - P;
@@ -80,6 +56,8 @@ void Relocate() {
         printf("S = %x, P = %x\n", S, P);
     }
 }
+
+} //namespace
 
 void ResolveSymbols() {
     GetSymbols();
