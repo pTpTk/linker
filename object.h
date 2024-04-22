@@ -47,9 +47,8 @@ class Section
     void alloc(uint size) { bin.resize(size); }
 };
 
-    std::ifstream ifs;
-
   public:
+    std::ifstream ifs;
     std::string file_name;
 
     std::vector<char> file_header = std::vector<char>(0x34);
@@ -80,5 +79,19 @@ class Section
         ReadSectionHeaders();
         ReadShstrtab();
         ReadSections();
+    }
+};
+
+class LibFile : public ObjectFile
+{
+  public:
+    std::vector<char> dynsym;
+    std::vector<char> dynstr;
+    std::vector<char> dynamic;
+
+    void ReadDynSections();
+    LibFile(std::string filename)
+    : ObjectFile(filename) {
+        ReadDynSections();
     }
 };

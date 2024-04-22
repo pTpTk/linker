@@ -37,7 +37,7 @@ struct Program_Header
 void WriteFileHeader(std::ofstream& ofs) {
     e_type = 0x3;
     e_entry = 0x1000;
-    e_phnum = 3;
+    e_phnum = 4;
 
     ofs.write(file_header.data(), file_header.size());
 }
@@ -66,10 +66,11 @@ void WriteInterp(std::ofstream& ofs) {
     int interp_size = interp.size();
 
     Program_Header ph_interp;
+    int ph_interp_offset = 0x34 + 0x20 * e_phnum;
     ph_interp.p_type   = 0x03;
-    ph_interp.p_offset = 0xf4;
-    ph_interp.p_vaddr  = 0xf4;
-    ph_interp.p_paddr  = 0xf4;
+    ph_interp.p_offset = ph_interp_offset;
+    ph_interp.p_vaddr  = ph_interp_offset;
+    ph_interp.p_paddr  = ph_interp_offset;
     ph_interp.p_filesz = interp_size;
     ph_interp.p_memsz  = interp_size;
     ph_interp.p_flags  = 0x04;
@@ -78,8 +79,25 @@ void WriteInterp(std::ofstream& ofs) {
     ofs.seekp(0x54);
     // ofs.write(ph_interp.bin.data(), 0x20);
 
-    ofs.seekp(0xf4);
+    ofs.seekp(ph_interp_offset);
     ofs.write(interp.data(), interp_size);
+}
+
+void WriteMisc(std::ofstream& ofs) {
+    Program_Header ph_load;
+    int load_size = ofs.tellp();
+    load_size -= 1;
+    ph_load.p_type   = 0x01;
+    ph_load.p_offset = 0x00;
+    ph_load.p_vaddr  = 0x00;
+    ph_load.p_paddr  = 0x00;
+    ph_load.p_filesz = load_size;
+    ph_load.p_memsz  = load_size;
+    ph_load.p_flags  = 0x04;
+    ph_load.p_align  = 0x1000;
+
+    ofs.seekp(0x74);
+    ofs.write(ph_load.bin.data(), 0x20);
 }
 
 void WriteText(std::ofstream& ofs) {
@@ -94,7 +112,7 @@ void WriteText(std::ofstream& ofs) {
     ph_text.p_flags  = 0x05;
     ph_text.p_align  = 0x1000;
 
-    ofs.seekp(0x74);
+    ofs.seekp(0x94);
     ofs.write(ph_text.bin.data(), 0x20);
 
     ofs.seekp(0x1000);
@@ -108,6 +126,7 @@ void WriteOutput(std::ofstream& ofs) {
     WriteFileHeader(ofs);
     WritePHDR(ofs);
     WriteInterp(ofs);
+    WriteMisc(ofs);
     WriteText(ofs);
 
 }

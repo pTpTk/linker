@@ -85,3 +85,20 @@ void ObjectFile::ReadSections() {
         }
     }
 }
+
+void LibFile::ReadDynSections() {
+    for(auto& s : sections) {
+        if(s.name == ".dynsym") {
+            dynsym = s.bin;
+            continue;
+        }
+        if(s.name == ".dynstr") {
+            dynstr = s.bin;
+            continue;
+        }
+        if(s.name == ".dynamic") {
+            dynamic = s.bin;
+            continue;
+        }
+    }
+}
