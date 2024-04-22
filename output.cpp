@@ -35,25 +35,51 @@ struct Program_Header
 };
 
 void WriteFileHeader(std::ofstream& ofs) {
-    e_type = 0x2;
-    e_entry = 0x08049000;
-    e_phnum = 2;
+    e_type = 0x3;
+    e_entry = 0x1000;
+    e_phnum = 3;
 
     ofs.write(file_header.data(), file_header.size());
 }
 
 void WritePHDR(std::ofstream& ofs) {
     Program_Header phdr;
-    phdr.p_type   = 0x01;
-    phdr.p_offset = 0x00;
-    phdr.p_vaddr  = 0x08048000;
-    phdr.p_paddr  = 0x08048000;
-    phdr.p_filesz = 0x34 + 0x20 * e_phnum;
-    phdr.p_memsz  = 0x34 + 0x20 * e_phnum;
+    phdr.p_type   = 0x06;
+    phdr.p_offset = 0x34;
+    phdr.p_vaddr  = 0x34;
+    phdr.p_paddr  = 0x34;
+    phdr.p_filesz = 0x20 * e_phnum;
+    phdr.p_memsz  = 0x20 * e_phnum;
     phdr.p_flags  = 0x04;
-    phdr.p_align  = 0x1000;
+    phdr.p_align  = 0x04;
 
     ofs.write(phdr.bin.data(), 0x20);
+}
+
+void WriteInterp(std::ofstream& ofs) {
+    std::vector<char> interp = 
+    {
+        0x2F, 0x6C, 0x69, 0x62, 0x2F, 0x6C, 0x64, 0x2D, 
+        0x6C, 0x69, 0x6E, 0x75, 0x78, 0x2E, 0x73, 0x6F, 
+        0x2E, 0x32, 0x00
+    };
+    int interp_size = interp.size();
+
+    Program_Header ph_interp;
+    ph_interp.p_type   = 0x03;
+    ph_interp.p_offset = 0xf4;
+    ph_interp.p_vaddr  = 0xf4;
+    ph_interp.p_paddr  = 0xf4;
+    ph_interp.p_filesz = interp_size;
+    ph_interp.p_memsz  = interp_size;
+    ph_interp.p_flags  = 0x04;
+    ph_interp.p_align  = 0x01;
+
+    ofs.seekp(0x54);
+    // ofs.write(ph_interp.bin.data(), 0x20);
+
+    ofs.seekp(0xf4);
+    ofs.write(interp.data(), interp_size);
 }
 
 void WriteText(std::ofstream& ofs) {
@@ -61,13 +87,14 @@ void WriteText(std::ofstream& ofs) {
     int text_size = texts.size();
     ph_text.p_type   = 0x01;
     ph_text.p_offset = 0x1000;
-    ph_text.p_vaddr  = 0x08048000 + 0x1000;
-    ph_text.p_paddr  = 0x08048000 + 0x1000;
+    ph_text.p_vaddr  = 0x1000;
+    ph_text.p_paddr  = 0x1000;
     ph_text.p_filesz = text_size;
     ph_text.p_memsz  = text_size;
     ph_text.p_flags  = 0x05;
     ph_text.p_align  = 0x1000;
 
+    ofs.seekp(0x74);
     ofs.write(ph_text.bin.data(), 0x20);
 
     ofs.seekp(0x1000);
@@ -80,6 +107,7 @@ void WriteOutput(std::ofstream& ofs) {
 
     WriteFileHeader(ofs);
     WritePHDR(ofs);
+    WriteInterp(ofs);
     WriteText(ofs);
 
 }

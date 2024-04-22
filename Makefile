@@ -4,5 +4,9 @@ all: $(wildcard *.cpp) $(wildcard *.h)
 debug:
 	g++ -DDEBUG -g $(wildcard *.cpp) -o link
 
-test:
+output:
 	./link crt.o test.o output.x
+
+test: output
+	chmod +x output.x
+	./output.x
