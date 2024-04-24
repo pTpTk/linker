@@ -1,5 +1,6 @@
 {
     "files.associations": {
+        "*.dump": "asm-intel-x86-generic",
         "*.tcc": "cpp",
         "array": "cpp",
         "atomic": "cpp",
@@ -46,6 +47,7 @@
         "streambuf": "cpp",
         "typeinfo": "cpp",
         "cstring": "cpp",
-        "sstream": "cpp"
+        "sstream": "cpp",
+        "unordered_set": "cpp"
     }
 }

@@ -12,12 +12,13 @@ struct Symbol
     std::string name;
     int val;
     bool defined;
+    uint offset;
 
     Symbol(std::string n, int v)
-    : name(n), val(v), defined(true) {}
+    : name(n), val(v), defined(true), offset(0) {}
 
     Symbol(std::string n)
-    : name(n), val(-1), defined(false) {}
+    : name(n), val(-1), defined(false), offset(0) {}
 };
 
 class ObjectFile

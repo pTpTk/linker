@@ -5,6 +5,7 @@
 #include "object.h"
 
 void ResolveSymbols(std::vector<ObjectFile>& files);
+void ProcessSharedLibs(std::vector<LibFile>& libs);
 void WriteOutput(std::ofstream& ofs);
 
 int main(int argc, char** argv) {
@@ -26,10 +27,14 @@ int main(int argc, char** argv) {
         lib_files.emplace_back(lib_name);
     }
 
+    // focus on at most 1 lib for now
+    assert(lib_files.size() < 2);
+
     std::ofstream ofs(argv[argc-1], std::ios::binary);
 
     ResolveSymbols(obj_files);
-    WriteOutput(ofs);
+    ProcessSharedLibs(lib_files);
+    // WriteOutput(ofs);
 
 
     return 0;

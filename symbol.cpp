@@ -3,11 +3,15 @@
 #include <iostream>
 #include <cassert>
 #include <unordered_map>
+#include <unordered_set>
 
 #include "debug.h"
 #include "object.h"
 
 std::vector<char> texts;
+// vector of dyn relocations
+std::vector<Symbol> rels;
+std::unordered_set<std::string> refs;
 
 namespace {
 
@@ -75,7 +79,16 @@ void Relocate(ObjectFile& f) {
         }
         else {
             auto entry = global_symbols.find(s.name);
-            assert(entry != global_symbols.end());
+
+            // global symbols defined in libs
+            if(entry == global_symbols.end()) {
+                rels.emplace_back(s.name);
+                refs.emplace(s.name);
+                rels.back().offset = r_offset+f.text_offset;
+                D("undefined symbol %s @ 0x%x\n", 
+                    s.name.c_str(), r_offset+f.text_offset);
+                continue;
+            }
 
             S = global_symbols[s.name];
         }
