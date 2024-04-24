@@ -5,12 +5,24 @@
 #include "debug.h"
 #include "object.h"
 
+// Only support STT_FUNC type
+#define EMPTY_SYMTAB_EMTRY \
+{ \
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, \
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x12, 0x00 \
+}
+
 extern std::vector<char> texts;
 extern std::vector<Symbol> rels;
 extern std::unordered_set<std::string> refs;
 
 std::vector<char> dynsym;
 std::string dynstr;
+
+inline void merge(std::vector<char>& v1, 
+                  std::vector<char>& v2) {
+    v1.insert(v1.end(), v2.begin(), v2.end());
+}
 
 void GetSymbols(LibFile& f) {
     auto& dynsym = f.dynsym;
@@ -52,6 +64,11 @@ void WriteDyns(LibFile& f) {
     }
 
     for(auto& s : referred_symbols) {
+        std::vector<char> dynsym_entry = EMPTY_SYMTAB_EMTRY;
+        uint& pos  = (uint&)dynsym_entry[0];
+        pos = dynstr.size();
+        merge(dynsym, dynsym_entry);
+
         dynstr += s;
         dynstr += '\0';
         refs.erase(s);
