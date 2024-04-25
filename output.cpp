@@ -3,6 +3,8 @@
 #include <array>
 
 extern std::vector<char> texts;
+extern std::vector<char> dynsym;
+extern std::string dynstr;
 
 namespace {
 
@@ -81,12 +83,12 @@ void WriteMisc(std::ofstream& ofs) {
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
     };
 
-    int gnu_hash_offset = 0x34 + 0x20 * e_phnum + 0x13;
+    int gnu_hash_offset = 0x34 + 0x20 * e_phnum + 0x14;
 
     ofs.seekp(gnu_hash_offset);
     ofs.write(empty_gnu_hash.data(), empty_gnu_hash.size());
-
-
+    ofs.write(dynsym.data(), dynsym.size());
+    ofs << dynstr;
 
     int load_size = ofs.tellp();
     load_size -= 1;

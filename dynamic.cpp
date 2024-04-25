@@ -84,6 +84,7 @@ void ProcessSharedLibs(std::vector<LibFile>& libs) {
         GetSymbols(f);
     }
 
+    dynsym = std::vector<char>(0x10,0);
     dynstr += '\0';
     for(auto& f : libs) {
         WriteDyns(f);
