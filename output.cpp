@@ -21,6 +21,14 @@ int16_t& e_type  = (int16_t&)file_header[0x10];
 int32_t& e_entry = (int32_t&)file_header[0x18];
 int16_t& e_phnum = (int16_t&)file_header[0x2C];
 
+void WriteFileHeader(std::ofstream& ofs) {
+    e_type = 0x3;
+    e_entry = 0x1000;
+    e_phnum = 6;
+
+    ofs.write(file_header.data(), file_header.size());
+}
+
 struct Program_Header
 {
     std::vector<char> bin = std::vector<char>(0x20,0);
@@ -34,27 +42,13 @@ struct Program_Header
     int& p_align  = (int&)bin[0x1C];
 };
 
-void WriteFileHeader(std::ofstream& ofs) {
-    e_type = 0x3;
-    e_entry = 0x1000;
-    e_phnum = 4;
-
-    ofs.write(file_header.data(), file_header.size());
-}
-
-void WritePHDR(std::ofstream& ofs) {
-    Program_Header phdr;
-    phdr.p_type   = 0x06;
-    phdr.p_offset = 0x34;
-    phdr.p_vaddr  = 0x34;
-    phdr.p_paddr  = 0x34;
-    phdr.p_filesz = 0x20 * e_phnum;
-    phdr.p_memsz  = 0x20 * e_phnum;
-    phdr.p_flags  = 0x04;
-    phdr.p_align  = 0x04;
-
-    ofs.write(phdr.bin.data(), 0x20);
-}
+std::vector<Program_Header> program_headers(6);
+Program_Header& PHDR       = program_headers[0];
+Program_Header& PH_INTERP  = program_headers[1];
+Program_Header& PH_LOAD_0  = program_headers[2];
+Program_Header& PH_LOAD_1  = program_headers[3];
+Program_Header& PH_LOAD_2  = program_headers[4];
+Program_Header& PH_DYNAMIC = program_headers[5];
 
 void WriteInterp(std::ofstream& ofs) {
     std::vector<char> interp = 
@@ -64,59 +58,78 @@ void WriteInterp(std::ofstream& ofs) {
         0x2E, 0x32, 0x00
     };
     int interp_size = interp.size();
-
-    Program_Header ph_interp;
     int ph_interp_offset = 0x34 + 0x20 * e_phnum;
-    ph_interp.p_type   = 0x03;
-    ph_interp.p_offset = ph_interp_offset;
-    ph_interp.p_vaddr  = ph_interp_offset;
-    ph_interp.p_paddr  = ph_interp_offset;
-    ph_interp.p_filesz = interp_size;
-    ph_interp.p_memsz  = interp_size;
-    ph_interp.p_flags  = 0x04;
-    ph_interp.p_align  = 0x01;
-
-    ofs.seekp(0x54);
-    // ofs.write(ph_interp.bin.data(), 0x20);
 
     ofs.seekp(ph_interp_offset);
     ofs.write(interp.data(), interp_size);
+
+    // PH_INTERP.p_type   = 0x03;
+    // PH_INTERP.p_offset = ph_interp_offset;
+    // PH_INTERP.p_vaddr  = ph_interp_offset;
+    // PH_INTERP.p_paddr  = ph_interp_offset;
+    // PH_INTERP.p_filesz = interp_size;
+    // PH_INTERP.p_memsz  = interp_size;
+    // PH_INTERP.p_flags  = 0x04;
+    // PH_INTERP.p_align  = 0x01;
 }
 
 void WriteMisc(std::ofstream& ofs) {
-    Program_Header ph_load;
+    std::vector<char> empty_gnu_hash = 
+    {
+        0x01, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 
+        0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+    };
+
+    int gnu_hash_offset = 0x34 + 0x20 * e_phnum + 0x13;
+
+    ofs.seekp(gnu_hash_offset);
+    ofs.write(empty_gnu_hash.data(), empty_gnu_hash.size());
+
+
+
     int load_size = ofs.tellp();
     load_size -= 1;
-    ph_load.p_type   = 0x01;
-    ph_load.p_offset = 0x00;
-    ph_load.p_vaddr  = 0x00;
-    ph_load.p_paddr  = 0x00;
-    ph_load.p_filesz = load_size;
-    ph_load.p_memsz  = load_size;
-    ph_load.p_flags  = 0x04;
-    ph_load.p_align  = 0x1000;
-
-    ofs.seekp(0x74);
-    ofs.write(ph_load.bin.data(), 0x20);
+    PH_LOAD_0.p_type   = 0x01;
+    PH_LOAD_0.p_offset = 0x00;
+    PH_LOAD_0.p_vaddr  = 0x00;
+    PH_LOAD_0.p_paddr  = 0x00;
+    PH_LOAD_0.p_filesz = load_size;
+    PH_LOAD_0.p_memsz  = load_size;
+    PH_LOAD_0.p_flags  = 0x04;
+    PH_LOAD_0.p_align  = 0x1000;
 }
 
 void WriteText(std::ofstream& ofs) {
-    Program_Header ph_text;
     int text_size = texts.size();
-    ph_text.p_type   = 0x01;
-    ph_text.p_offset = 0x1000;
-    ph_text.p_vaddr  = 0x1000;
-    ph_text.p_paddr  = 0x1000;
-    ph_text.p_filesz = text_size;
-    ph_text.p_memsz  = text_size;
-    ph_text.p_flags  = 0x05;
-    ph_text.p_align  = 0x1000;
-
-    ofs.seekp(0x94);
-    ofs.write(ph_text.bin.data(), 0x20);
 
     ofs.seekp(0x1000);
     ofs.write(texts.data(), text_size);
+
+    PH_LOAD_1.p_type   = 0x01;
+    PH_LOAD_1.p_offset = 0x1000;
+    PH_LOAD_1.p_vaddr  = 0x1000;
+    PH_LOAD_1.p_paddr  = 0x1000;
+    PH_LOAD_1.p_filesz = text_size;
+    PH_LOAD_1.p_memsz  = text_size;
+    PH_LOAD_1.p_flags  = 0x05;
+    PH_LOAD_1.p_align  = 0x1000;
+}
+
+void WriteProgramHeaders(std::ofstream& ofs) {
+    PHDR.p_type   = 0x06;
+    PHDR.p_offset = 0x34;
+    PHDR.p_vaddr  = 0x34;
+    PHDR.p_paddr  = 0x34;
+    PHDR.p_filesz = 0x20 * e_phnum;
+    PHDR.p_memsz  = 0x20 * e_phnum;
+    PHDR.p_flags  = 0x04;
+    PHDR.p_align  = 0x04;
+
+    ofs.seekp(0x34);
+    for(auto& ph : program_headers) {
+        ofs.write(ph.bin.data(), 0x20);
+    }
 }
 
 } // namespace
@@ -124,9 +137,9 @@ void WriteText(std::ofstream& ofs) {
 void WriteOutput(std::ofstream& ofs) {
 
     WriteFileHeader(ofs);
-    WritePHDR(ofs);
     WriteInterp(ofs);
     WriteMisc(ofs);
     WriteText(ofs);
+    WriteProgramHeaders(ofs);
 
 }

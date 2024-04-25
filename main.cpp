@@ -34,7 +34,7 @@ int main(int argc, char** argv) {
 
     ResolveSymbols(obj_files);
     ProcessSharedLibs(lib_files);
-    // WriteOutput(ofs);
+    WriteOutput(ofs);
 
 
     return 0;
