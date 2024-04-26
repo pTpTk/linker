@@ -10,7 +10,7 @@
 
 std::vector<char> texts;
 // vector of dyn relocations
-std::vector<Symbol> rels;
+std::unordered_multimap<std::string, uint> rels;
 std::unordered_set<std::string> refs;
 
 namespace {
@@ -82,9 +82,8 @@ void Relocate(ObjectFile& f) {
 
             // global symbols defined in libs
             if(entry == global_symbols.end()) {
-                rels.emplace_back(s.name);
+                rels.emplace(s.name, r_offset+f.text_offset);
                 refs.emplace(s.name);
-                rels.back().offset = r_offset+f.text_offset;
                 D("undefined symbol %s @ 0x%x\n", 
                     s.name.c_str(), r_offset+f.text_offset);
                 continue;

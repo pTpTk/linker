@@ -5,6 +5,7 @@
 extern std::vector<char> texts;
 extern std::vector<char> dynsym;
 extern std::string dynstr;
+extern std::vector<uint8_t> plt;
 
 namespace {
 
@@ -104,9 +105,11 @@ void WriteMisc(std::ofstream& ofs) {
 
 void WriteText(std::ofstream& ofs) {
     int text_size = texts.size();
+    text_size += plt.size();
 
     ofs.seekp(0x1000);
-    ofs.write(texts.data(), text_size);
+    ofs.write(texts.data(), texts.size());
+    ofs.write((char*)plt.data(), plt.size());
 
     PH_LOAD_1.p_type   = 0x01;
     PH_LOAD_1.p_offset = 0x1000;
