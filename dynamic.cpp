@@ -33,6 +33,7 @@ std::vector<char> dynsym;
 std::string dynstr;
 
 std::vector<uint8_t> plt;
+std::vector<uint> got;
 
 template<typename T>
 inline void merge(std::vector<T>& v1, 
@@ -64,6 +65,14 @@ void GetSymbols(LibFile& f) {
     }
 }
 
+inline void align16(uint& offset) {
+    if(offset & 0b1111) {
+        offset >>= 4;
+        ++offset;
+        offset <<= 4;
+    }
+}
+
 void WriteDyns(LibFile& f) {
     auto& fsymbols = f.symbols;
     std::vector<std::string> referred_symbols;
@@ -82,16 +91,25 @@ void WriteDyns(LibFile& f) {
     uint push_val = 0x00;
     uint plt0_offset = -0x20;
 
+    uint text_offset = texts.size() + 0x1000;
+    printf("text_offset = 0x%x\n", text_offset);
+    align16(text_offset);
+    printf("text_offset = 0x%x\n", text_offset);
+    text_offset += 0x16;
+
     for(auto& s : referred_symbols) {
+        // dynsym
         std::vector<char> dynsym_entry = EMPTY_SYMTAB_EMTRY;
         uint& pos  = (uint&)dynsym_entry[0];
         pos = dynstr.size();
         merge(dynsym, dynsym_entry);
 
+        // dynstr
         dynstr += s;
         dynstr += '\0';
         refs.erase(s);
 
+        // plt
         std::vector<uint8_t> plt_entry = PLT_ENTRY;
         uint& entry_got_offset  = (uint&)plt_entry[2];
         uint& entry_push_val    = (uint&)plt_entry[7];
@@ -106,6 +124,10 @@ void WriteDyns(LibFile& f) {
         plt0_offset -= 0x10;
 
         merge(plt, plt_entry);
+
+        // got
+        got.emplace_back(text_offset);
+        text_offset += 0x10;
     }
 
     dynstr += f.file_name;
@@ -121,6 +143,7 @@ void ProcessSharedLibs(std::vector<LibFile>& libs) {
     dynsym = std::vector<char>(0x10,0);
     dynstr += '\0';
     plt = PLT_0;
+    got = {0x2000, 0x00, 0x00};
     for(auto& f : libs) {
         WriteDyns(f);
     }

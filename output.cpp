@@ -6,6 +6,7 @@ extern std::vector<char> texts;
 extern std::vector<char> dynsym;
 extern std::string dynstr;
 extern std::vector<uint8_t> plt;
+extern std::vector<uint> got;
 
 namespace {
 
@@ -130,6 +131,11 @@ void WriteText(std::ofstream& ofs) {
     PH_LOAD_1.p_align  = 0x1000;
 }
 
+void WriteGot(std::ofstream& ofs) {
+    ofs.seekp(0x2000);
+    ofs.write((char*)got.data(), got.size() << 2);
+}
+
 void WriteProgramHeaders(std::ofstream& ofs) {
     PHDR.p_type   = 0x06;
     PHDR.p_offset = 0x34;
@@ -154,6 +160,7 @@ void WriteOutput(std::ofstream& ofs) {
     WriteInterp(ofs);
     WriteMisc(ofs);
     WriteText(ofs);
+    WriteGot(ofs);
     WriteProgramHeaders(ofs);
 
 }
