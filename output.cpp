@@ -103,13 +103,22 @@ void WriteMisc(std::ofstream& ofs) {
     PH_LOAD_0.p_align  = 0x1000;
 }
 
-void WriteText(std::ofstream& ofs) {
-    int text_size = texts.size();
-    text_size += plt.size();
+void align(std::ofstream& ofs, int i) {
+    uint pos = ofs.tellp();
+    while(pos % i != 0) {
+        pos++;
+        ofs << '\0';
+    }
+}
 
+void WriteText(std::ofstream& ofs) {
     ofs.seekp(0x1000);
     ofs.write(texts.data(), texts.size());
+    align(ofs, 0x10);
     ofs.write((char*)plt.data(), plt.size());
+
+    int text_size = (int)ofs.tellp() - 1;
+    text_size -= 1000;
 
     PH_LOAD_1.p_type   = 0x01;
     PH_LOAD_1.p_offset = 0x1000;
