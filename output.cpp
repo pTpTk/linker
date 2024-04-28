@@ -5,6 +5,8 @@
 extern std::vector<char> texts;
 extern std::vector<char> dynsym;
 extern std::string dynstr;
+extern std::vector<char> rel_dyn;
+extern std::vector<char> rel_plt;
 extern std::vector<uint8_t> plt;
 extern std::vector<uint> got;
 
@@ -91,6 +93,8 @@ void WriteMisc(std::ofstream& ofs) {
     ofs.write(empty_gnu_hash.data(), empty_gnu_hash.size());
     ofs.write(dynsym.data(), dynsym.size());
     ofs << dynstr;
+    ofs.write(rel_dyn.data(), rel_dyn.size());
+    ofs.write(rel_plt.data(), rel_plt.size());
 
     int load_size = ofs.tellp();
     load_size -= 1;

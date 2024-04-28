@@ -35,6 +35,9 @@ std::string dynstr;
 std::vector<uint8_t> plt;
 std::vector<uint> got;
 
+std::vector<char> rel_dyn;
+std::vector<char> rel_plt;
+
 template<typename T>
 inline void merge(std::vector<T>& v1, 
                   std::vector<T>& v2) {
@@ -92,10 +95,12 @@ void WriteDyns(LibFile& f) {
     uint plt0_offset = -0x20;
 
     uint text_offset = texts.size() + 0x1000;
-    printf("text_offset = 0x%x\n", text_offset);
     align16(text_offset);
-    printf("text_offset = 0x%x\n", text_offset);
     text_offset += 0x16;
+
+    int sym_index = 1;
+
+    uint got_entry_addr = 0x2000 + 0x0c;
 
     for(auto& s : referred_symbols) {
         // dynsym
@@ -114,20 +119,42 @@ void WriteDyns(LibFile& f) {
         uint& entry_got_offset  = (uint&)plt_entry[2];
         uint& entry_push_val    = (uint&)plt_entry[7];
         uint& entry_plt0_offset = (uint&)plt_entry[12];
-        
-        entry_got_offset = got_offset;
-        entry_push_val = push_val;
+        entry_got_offset  = got_offset;
+        entry_push_val    = push_val;
         entry_plt0_offset = plt0_offset;
-
         got_offset  += 0x04;
         push_val    += 0x08;
         plt0_offset -= 0x10;
-
         merge(plt, plt_entry);
 
         // got
         got.emplace_back(text_offset);
         text_offset += 0x10;
+
+        // rel.dyn
+        auto range = rels.equal_range(s);
+        for(auto it = range.first; it != range.second; ++it) {
+            std::vector<char> rel_dyn_entry(8,0);
+            uint32_t& r_offset = (uint&)rel_dyn_entry[0];
+            char&  r_type      =        rel_dyn_entry[4];
+            char&  r_sym       =        rel_dyn_entry[5];
+            r_offset = it->second + 0x1000;
+            r_type   = 0x02;
+            r_sym    = sym_index;
+            merge(rel_dyn, rel_dyn_entry);
+        }
+
+        // rel.plt
+        std::vector<char> rel_plt_entry(8,0);
+        uint32_t& r_offset = (uint&)rel_plt_entry[0];
+        char&  r_type      =        rel_plt_entry[4];
+        char&  r_sym       =        rel_plt_entry[5];
+        r_offset = got_entry_addr;
+        r_type   = 0x07;
+        r_sym    = sym_index;
+        merge(rel_plt, rel_plt_entry);
+        got_entry_addr += 0x04;
+        sym_index += 1;
     }
 
     dynstr += f.file_name;
