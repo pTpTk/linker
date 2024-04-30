@@ -91,12 +91,24 @@ void WriteMisc(std::ofstream& ofs) {
     };
 
     int gnu_hash_offset = 0x34 + 0x20 * e_phnum + 0x14;
-
     ofs.seekp(gnu_hash_offset);
+
+    dynamic.gnu_hash = ofs.tellp();
     ofs.write(empty_gnu_hash.data(), empty_gnu_hash.size());
+    
+    dynamic.symtab = ofs.tellp();
     ofs.write(dynsym.data(), dynsym.size());
+
+    dynamic.strtab = ofs.tellp();
+    dynamic.strsz = dynstr.size();
     ofs << dynstr;
+
+    dynamic.rel = ofs.tellp();
+    dynamic.relsz = rel_dyn.size();
     ofs.write(rel_dyn.data(), rel_dyn.size());
+
+    dynamic.jmprel = ofs.tellp();
+    dynamic.pltrelsz = rel_plt.size();
     ofs.write(rel_plt.data(), rel_plt.size());
 
     int load_size = ofs.tellp();
@@ -139,11 +151,21 @@ void WriteText(std::ofstream& ofs) {
 }
 
 void WriteLoad2(std::ofstream& ofs) {
+    dynamic.pltgot = 0x2000 + (17 << 3);
     dynamic.generate();
     
     ofs.seekp(0x2000);
     ofs.write(dynamic.output.data(), dynamic.output.size());
     ofs.write((char*)got.data(), got.size() << 2);
+
+    PH_DYNAMIC.p_type = 0x02;
+    PH_DYNAMIC.p_offset = 0x2000;
+    PH_DYNAMIC.p_vaddr  = 0x2000;
+    PH_DYNAMIC.p_paddr  = 0x2000;
+    PH_DYNAMIC.p_filesz = 17 << 3;
+    PH_DYNAMIC.p_memsz  = 17 << 3;
+    PH_DYNAMIC.p_flags  = 0x06;
+    PH_DYNAMIC.p_align  = 0x04;
 }
 
 void WriteProgramHeaders(std::ofstream& ofs) {

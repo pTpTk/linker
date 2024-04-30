@@ -31,7 +31,7 @@ class Dynamic
     uint syment = 0x10;
     uint pltgot;
     uint pltrelsz;
-    uint pltrel;
+    uint pltrel = 0x11;
     uint jmprel;
     uint rel;
     uint relsz;
