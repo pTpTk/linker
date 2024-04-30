@@ -2,6 +2,8 @@
 #include <vector>
 #include <array>
 
+#include "dynamic.h"
+
 extern std::vector<char> texts;
 extern std::vector<char> dynsym;
 extern std::string dynstr;
@@ -9,6 +11,7 @@ extern std::vector<char> rel_dyn;
 extern std::vector<char> rel_plt;
 extern std::vector<uint8_t> plt;
 extern std::vector<uint> got;
+extern Dynamic dynamic;
 
 namespace {
 
@@ -112,8 +115,8 @@ void align(std::ofstream& ofs, int i) {
     uint pos = ofs.tellp();
     while(pos % i != 0) {
         pos++;
-        ofs << '\0';
     }
+    ofs.seekp(pos);
 }
 
 void WriteText(std::ofstream& ofs) {
@@ -135,8 +138,11 @@ void WriteText(std::ofstream& ofs) {
     PH_LOAD_1.p_align  = 0x1000;
 }
 
-void WriteGot(std::ofstream& ofs) {
+void WriteLoad2(std::ofstream& ofs) {
+    dynamic.generate();
+    
     ofs.seekp(0x2000);
+    ofs.write(dynamic.output.data(), dynamic.output.size());
     ofs.write((char*)got.data(), got.size() << 2);
 }
 
@@ -164,7 +170,7 @@ void WriteOutput(std::ofstream& ofs) {
     WriteInterp(ofs);
     WriteMisc(ofs);
     WriteText(ofs);
-    WriteGot(ofs);
+    WriteLoad2(ofs);
     WriteProgramHeaders(ofs);
 
 }

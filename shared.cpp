@@ -5,6 +5,7 @@
 
 #include "debug.h"
 #include "object.h"
+#include "dynamic.h"
 
 // Only support STT_FUNC type
 #define EMPTY_SYMTAB_EMTRY \
@@ -37,6 +38,8 @@ std::vector<uint> got;
 
 std::vector<char> rel_dyn;
 std::vector<char> rel_plt;
+
+Dynamic dynamic;
 
 template<typename T>
 inline void merge(std::vector<T>& v1, 
@@ -156,6 +159,8 @@ void WriteDyns(LibFile& f) {
         got_entry_addr += 0x04;
         sym_index += 1;
     }
+
+    dynamic.needed = dynstr.size();
 
     dynstr += f.file_name;
     dynstr += '\0';
