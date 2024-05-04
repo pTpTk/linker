@@ -9,5 +9,5 @@ output:
 	./link crt.o ../test/main.o -ltest output.x
 
 test: output
-	# chmod +x output.x
-	# ./output.x
+	chmod +x output.x
+	./output.x

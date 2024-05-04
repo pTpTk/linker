@@ -72,14 +72,22 @@ void WriteInterp(std::ofstream& ofs) {
     ofs.seekp(ph_interp_offset);
     ofs.write(interp.data(), interp_size);
 
-    // PH_INTERP.p_type   = 0x03;
-    // PH_INTERP.p_offset = ph_interp_offset;
-    // PH_INTERP.p_vaddr  = ph_interp_offset;
-    // PH_INTERP.p_paddr  = ph_interp_offset;
-    // PH_INTERP.p_filesz = interp_size;
-    // PH_INTERP.p_memsz  = interp_size;
-    // PH_INTERP.p_flags  = 0x04;
-    // PH_INTERP.p_align  = 0x01;
+    PH_INTERP.p_type   = 0x03;
+    PH_INTERP.p_offset = ph_interp_offset;
+    PH_INTERP.p_vaddr  = ph_interp_offset;
+    PH_INTERP.p_paddr  = ph_interp_offset;
+    PH_INTERP.p_filesz = interp_size;
+    PH_INTERP.p_memsz  = interp_size;
+    PH_INTERP.p_flags  = 0x04;
+    PH_INTERP.p_align  = 0x01;
+}
+
+void align(std::ofstream& ofs, int i) {
+    uint pos = ofs.tellp();
+    while(pos % i != 0) {
+        pos++;
+    }
+    ofs.seekp(pos);
 }
 
 void WriteMisc(std::ofstream& ofs) {
@@ -93,26 +101,38 @@ void WriteMisc(std::ofstream& ofs) {
     int gnu_hash_offset = 0x34 + 0x20 * e_phnum + 0x14;
     ofs.seekp(gnu_hash_offset);
 
+    align(ofs, 4);
+
     dynamic.gnu_hash = ofs.tellp();
     ofs.write(empty_gnu_hash.data(), empty_gnu_hash.size());
+
+    align(ofs, 4);
     
     dynamic.symtab = ofs.tellp();
     ofs.write(dynsym.data(), dynsym.size());
+
+    align(ofs, 4);
 
     dynamic.strtab = ofs.tellp();
     dynamic.strsz = dynstr.size();
     ofs << dynstr;
 
+    align(ofs, 4);
+
     dynamic.rel = ofs.tellp();
     dynamic.relsz = rel_dyn.size();
     ofs.write(rel_dyn.data(), rel_dyn.size());
+
+    align(ofs, 4);
 
     dynamic.jmprel = ofs.tellp();
     dynamic.pltrelsz = rel_plt.size();
     ofs.write(rel_plt.data(), rel_plt.size());
 
+    align(ofs, 4);
+
     int load_size = ofs.tellp();
-    load_size -= 1;
+
     PH_LOAD_0.p_type   = 0x01;
     PH_LOAD_0.p_offset = 0x00;
     PH_LOAD_0.p_vaddr  = 0x00;
@@ -123,22 +143,14 @@ void WriteMisc(std::ofstream& ofs) {
     PH_LOAD_0.p_align  = 0x1000;
 }
 
-void align(std::ofstream& ofs, int i) {
-    uint pos = ofs.tellp();
-    while(pos % i != 0) {
-        pos++;
-    }
-    ofs.seekp(pos);
-}
-
 void WriteText(std::ofstream& ofs) {
     ofs.seekp(0x1000);
     ofs.write(texts.data(), texts.size());
     align(ofs, 0x10);
     ofs.write((char*)plt.data(), plt.size());
 
-    int text_size = (int)ofs.tellp() - 1;
-    text_size -= 1000;
+    int text_size = (int)ofs.tellp();
+    text_size -= 0x1000;
 
     PH_LOAD_1.p_type   = 0x01;
     PH_LOAD_1.p_offset = 0x1000;
@@ -166,6 +178,17 @@ void WriteLoad2(std::ofstream& ofs) {
     PH_DYNAMIC.p_memsz  = 17 << 3;
     PH_DYNAMIC.p_flags  = 0x06;
     PH_DYNAMIC.p_align  = 0x04;
+
+    uint load2_size = dynamic.output.size() + (got.size() << 2);
+
+    PH_LOAD_2.p_type = 0x01;
+    PH_LOAD_2.p_offset = 0x2000;
+    PH_LOAD_2.p_vaddr  = 0x2000;
+    PH_LOAD_2.p_paddr  = 0x2000;
+    PH_LOAD_2.p_filesz = load2_size;
+    PH_LOAD_2.p_memsz  = load2_size;
+    PH_LOAD_2.p_flags  = 0x06;
+    PH_LOAD_2.p_align  = 0x1000;
 }
 
 void WriteProgramHeaders(std::ofstream& ofs) {
