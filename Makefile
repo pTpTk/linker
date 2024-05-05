@@ -6,7 +6,7 @@ debug:
 
 output:
 	# ./link crt.o test.o output.x
-	./link crt.o ../test/main.o -ltest output.x
+	./link crt.o ../test/main.o -lputchar output.x
 
 test: output
 	chmod +x output.x
