@@ -41,6 +41,8 @@ std::vector<char> rel_plt;
 
 Dynamic dynamic;
 
+namespace {
+
 template<typename T>
 inline void merge(std::vector<T>& v1, 
                   std::vector<T>& v2) {
@@ -101,10 +103,6 @@ void WriteDyns(LibFile& f) {
     align16(text_offset);
     text_offset += 0x16;
 
-    uint symbol_offset = texts.size();
-    align16(symbol_offset);
-    symbol_offset += 0x10;
-
     int sym_index = 1;
 
     uint got_entry_addr = 0x2000 + (17 << 3) + 0x0c;
@@ -149,14 +147,7 @@ void WriteDyns(LibFile& f) {
             r_type   = 0x02;
             r_sym    = sym_index;
             merge(rel_dyn, rel_dyn_entry);
-
-            // uint r_offset = it->second;
-            // int& imm = (int&)texts[r_offset];
-            // int S = symbol_offset;
-            // int P = r_offset + sizeof(int);
-            // imm = S - P;
         }
-        symbol_offset += 0x10;
 
         // rel.plt
         std::vector<char> rel_plt_entry(8,0);
@@ -175,6 +166,8 @@ void WriteDyns(LibFile& f) {
 
     dynstr += f.file_name;
     dynstr += '\0';
+
+}
 
 }
 
