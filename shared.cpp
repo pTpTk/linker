@@ -69,7 +69,7 @@ void GetSymbols(LibFile& f) {
 
     D("%s tags:\n", f.file_name.c_str());
     for(auto& s : symbols) {
-        D("%s: 0x%X\n", s.name.c_str(), s.val);
+        D("%s: 0x%lX\n", s.name.c_str(), s.val);
     }
 }
 

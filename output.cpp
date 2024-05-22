@@ -211,11 +211,11 @@ void WriteProgramHeaders(std::ofstream& ofs) {
 
 void WriteOutput(std::ofstream& ofs) {
 
-    WriteFileHeader(ofs);
-    WriteInterp(ofs);
-    WriteMisc(ofs);
+    // WriteFileHeader(ofs);
+    // WriteInterp(ofs);
+    // WriteMisc(ofs);
     WriteText(ofs);
-    WriteLoad2(ofs);
-    WriteProgramHeaders(ofs);
+    // WriteLoad2(ofs);
+    // WriteProgramHeaders(ofs);
 
 }

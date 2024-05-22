@@ -10,11 +10,11 @@
 struct Symbol
 {
     std::string name;
-    int val;
+    int64_t val;
     bool defined;
     uint offset;
 
-    Symbol(std::string n, int v)
+    Symbol(std::string n, int64_t v)
     : name(n), val(v), defined(true), offset(0) {}
 
     Symbol(std::string n)
@@ -65,7 +65,7 @@ class Section
     std::vector<char> text;
     std::vector<char> symtab;
     std::vector<char> strtab;
-    std::vector<char> rel_text;
+    std::vector<char> rela_text;
 
     std::vector<Symbol> symbols;
 

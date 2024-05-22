@@ -15,7 +15,7 @@ std::unordered_set<std::string> refs;
 
 namespace {
 
-std::unordered_map<std::string, int> global_symbols;
+std::unordered_map<std::string, int64_t> global_symbols;
 
 inline bool IsGlobal(uint8_t st_info) {
     char st_bind = st_info >> 4;
@@ -28,12 +28,13 @@ void GetSymbols(ObjectFile& f) {
     std::vector<char>& strtab = f.strtab;
     std::vector<Symbol>& symbols = f.symbols;
 
-    for(int i = 0x10; i < symtab.size(); i+=0x10) {
+    for(int i = 0x18; i < symtab.size(); i+=0x18) {
         uint32_t st_name  = (uint32_t&)symtab[i];
-        uint32_t st_value = (uint32_t&)symtab[i+0x4];
-        uint8_t  st_info  = (uint8_t&) symtab[i+0xC];
-        uint16_t st_shndx = (uint16_t&)symtab[i+0xE];
+        uint8_t  st_info  = (uint8_t&) symtab[i+0x4];
+        uint16_t st_shndx = (uint16_t&)symtab[i+0x6];
+        uint64_t st_value = (uint64_t&)symtab[i+0x8];
 
+        printf("st_name = %d\n", st_name);
         std::string name(strtab.data() + st_name);
 
         if(IsDefined(st_shndx)) {
@@ -48,7 +49,7 @@ void GetSymbols(ObjectFile& f) {
 
     D("tags:\n");
     for(auto& s : symbols) {
-        D("%s: 0x%X\n", s.name.c_str(), s.val);
+        D("%s: 0x%lX\n", s.name.c_str(), s.val);
     }
 }
 
@@ -56,20 +57,22 @@ void Relocate(ObjectFile& f) {
     D("filename: %s\n", f.file_name.c_str());
 
     std::vector<char>& text = f.text;
-    std::vector<char>& rel_text = f.rel_text;
+    std::vector<char>& rela_text = f.rela_text;
     std::vector<Symbol>& symbols = f.symbols;
 
-    for(int i = 0; i < rel_text.size(); i+=8) {
-        uint r_offset = (uint&) rel_text[i];
-        char r_type = rel_text[i+4];
-        char r_sym  = rel_text[i+5];
+    for(int i = 0; i < rela_text.size(); i+=0x18) {
+        uint64_t r_offset = (uint64_t)rela_text[i];
+        uint32_t r_type   = (uint32_t)rela_text[i+0x08];
+        uint32_t r_sym    = (uint32_t)rela_text[i+0x0C];
+        uint64_t r_addend = (uint64_t)rela_text[i+0x10];
 
-        assert(r_type == 2);
-        D("r_offset = %x, r_sym = %x\n", r_offset, r_sym);
+        assert(r_type == 4);
+        D("r_offset = %lx, r_sym = %x\n", r_offset, r_sym);
 
         int& imm = (int&)text[r_offset];
         int S;
-        int P = r_offset + sizeof(int);
+        int P = r_offset;
+        int A = r_addend;
 
         Symbol s = symbols[r_sym-1];
         D("symbol: %s\n", s.name.c_str());
@@ -84,7 +87,7 @@ void Relocate(ObjectFile& f) {
             if(entry == global_symbols.end()) {
                 rels.emplace(s.name, r_offset+f.text_offset);
                 refs.emplace(s.name);
-                D("undefined symbol %s @ 0x%x\n", 
+                D("undefined symbol %s @ 0x%lx\n", 
                     s.name.c_str(), r_offset+f.text_offset);
                 continue;
             }
@@ -92,9 +95,9 @@ void Relocate(ObjectFile& f) {
             S = global_symbols[s.name];
         }
 
-        imm = S - P;
+        imm = S + A - P;
 
-        D("S = 0x%X, P = 0x%X\n", S, P);
+        D("S = 0x%X, A = 0x%X, P = 0x%X\n", S, A, P);
     }
 }
 

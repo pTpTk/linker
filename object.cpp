@@ -79,8 +79,8 @@ void ObjectFile::ReadSections() {
             strtab = s.bin;
             continue;
         }
-        if(s.name == ".rel.text") {
-            rel_text = s.bin;
+        if(s.name == ".rela.text") {
+            rela_text = s.bin;
             continue;
         }
     }
