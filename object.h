@@ -26,17 +26,17 @@ class ObjectFile
 
 struct Section_Header
 {
-    std::vector<char> bin = std::vector<char>(0x28,0);
-    int& sh_name    = (int&)bin[0x00];
-    int& sh_type    = (int&)bin[0x04];
-    int& sh_flags   = (int&)bin[0x08];
-    int& sh_addr    = (int&)bin[0x0C];
-    int& sh_offset  = (int&)bin[0x10];
-    int& sh_size    = (int&)bin[0x14];
-    int& sh_link    = (int&)bin[0x18];
-    int& sh_info    = (int&)bin[0x1C];
-    int& sh_align   = (int&)bin[0x20];
-    int& sh_entsize = (int&)bin[0x24];
+    std::vector<char> bin = std::vector<char>(0x40,0);
+    int32_t& sh_name    = (int32_t&)bin[0x00];
+    int32_t& sh_type    = (int32_t&)bin[0x04];
+    int64_t& sh_flags   = (int64_t&)bin[0x08];
+    int64_t& sh_addr    = (int64_t&)bin[0x10];
+    int64_t& sh_offset  = (int64_t&)bin[0x18];
+    int64_t& sh_size    = (int64_t&)bin[0x20];
+    int32_t& sh_link    = (int32_t&)bin[0x28];
+    int32_t& sh_info    = (int32_t&)bin[0x2C];
+    int64_t& sh_align   = (int64_t&)bin[0x30];
+    int64_t& sh_entsize = (int64_t&)bin[0x38];
 };
 
 class Section
@@ -52,10 +52,10 @@ class Section
     std::ifstream ifs;
     std::string file_name;
 
-    std::vector<char> file_header = std::vector<char>(0x34);
-    uint32_t& e_shoff    = (uint32_t&)file_header[0x20];
-    uint16_t& e_shnum    = (uint16_t&)file_header[0x30];
-    uint16_t& e_shstrndx = (uint16_t&)file_header[0x32];
+    std::vector<char> file_header = std::vector<char>(0x40);
+    uint64_t& e_shoff    = (uint64_t&)file_header[0x28];
+    uint16_t& e_shnum    = (uint16_t&)file_header[0x3C];
+    uint16_t& e_shstrndx = (uint16_t&)file_header[0x3E];
 
     std::vector<Section_Header> section_headers;
     std::vector<char> shstrtab;

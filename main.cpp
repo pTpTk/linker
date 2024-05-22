@@ -33,8 +33,8 @@ int main(int argc, char** argv) {
     std::ofstream ofs(argv[argc-1], std::ios::binary);
 
     ResolveSymbols(obj_files);
-    ProcessSharedLibs(lib_files);
-    WriteOutput(ofs);
+    // ProcessSharedLibs(lib_files);
+    // WriteOutput(ofs);
 
 
     return 0;

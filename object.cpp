@@ -1,7 +1,7 @@
 #include "object.h"
 
 void ObjectFile::ReadFileHeader() {
-    ifs.read(file_header.data(), 0x34);
+    ifs.read(file_header.data(), file_header.size());
 
     assert(file_header[0] == 0x7F);
     assert(file_header[1] == 0x45);
@@ -18,7 +18,7 @@ void ObjectFile::ReadFileHeader() {
         D("\n");
     }
 
-    D("e_shoff = %x, e_shnum = %d, e_shstrndx = %d\n",
+    D("e_shoff = %lx, e_shnum = %d, e_shstrndx = %d\n",
         e_shoff, e_shnum, e_shstrndx);
 }
 
@@ -28,7 +28,7 @@ void ObjectFile::ReadSectionHeaders() {
     ifs.seekg(e_shoff);
 
     for(int i = 0; i < e_shnum; i++) {
-        ifs.read(section_headers[i].bin.data(), 0x28);
+        ifs.read(section_headers[i].bin.data(), 0x40);
     }
 }
 
