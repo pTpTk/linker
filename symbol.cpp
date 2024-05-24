@@ -34,7 +34,6 @@ void GetSymbols(ObjectFile& f) {
         uint16_t st_shndx = (uint16_t&)symtab[i+0x6];
         uint64_t st_value = (uint64_t&)symtab[i+0x8];
 
-        printf("st_name = %d\n", st_name);
         std::string name(strtab.data() + st_name);
 
         if(IsDefined(st_shndx)) {

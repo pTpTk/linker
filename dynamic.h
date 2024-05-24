@@ -6,46 +6,46 @@
 
 class Dynamic
 {
-    uint NEEDED    = 0x00000001;
-    uint GNU_HASH  = 0x6ffffef5;
-    uint STRTAB    = 0x00000005;
-    uint SYMTAB    = 0x00000006;
-    uint STRSZ     = 0x0000000a;
-    uint SYMENT    = 0x0000000b;
-    uint PLTGOT    = 0x00000003;
-    uint PLTRELSZ  = 0x00000002;
-    uint PLTREL    = 0x00000014;
-    uint JMPREL    = 0x00000017;
-    uint REL       = 0x00000011;
-    uint RELSZ     = 0x00000012;
-    uint RELENT    = 0x00000013;
-    uint TEXTREL   = 0x00000016;
-    uint FLAGS     = 0x0000001e;
-    uint FLAGS_1   = 0x6ffffffb;
+    uint64_t NEEDED    = 0x00000001;
+    uint64_t GNU_HASH  = 0x6ffffef5;
+    uint64_t STRTAB    = 0x00000005;
+    uint64_t SYMTAB    = 0x00000006;
+    uint64_t STRSZ     = 0x0000000a;
+    uint64_t SYMENT    = 0x0000000b;
+    uint64_t PLTGOT    = 0x00000003;
+    uint64_t PLTRELSZ  = 0x00000002;
+    uint64_t PLTREL    = 0x00000014;
+    uint64_t JMPREL    = 0x00000017;
+    uint64_t REL       = 0x00000011;
+    uint64_t RELSZ     = 0x00000012;
+    uint64_t RELENT    = 0x00000013;
+    uint64_t TEXTREL   = 0x00000016;
+    uint64_t FLAGS     = 0x0000001e;
+    uint64_t FLAGS_1   = 0x6ffffffb;
   public:
-    uint needed;
-    uint gnu_hash;
-    uint strtab;
-    uint symtab;
-    uint strsz;
-    uint syment = 0x10;
-    uint pltgot;
-    uint pltrelsz;
-    uint pltrel = 0x11;
-    uint jmprel;
-    uint rel;
-    uint relsz;
-    uint relent = 0x08;
-    uint textrel = 0x00;
-    uint flags = 0x0c;
-    uint flags_1 = 0x08000001;
+    uint64_t needed;
+    uint64_t gnu_hash;
+    uint64_t strtab;
+    uint64_t symtab;
+    uint64_t strsz;
+    uint64_t syment = 0x10;
+    uint64_t pltgot;
+    uint64_t pltrelsz;
+    uint64_t pltrel = 0x11;
+    uint64_t jmprel;
+    uint64_t rel;
+    uint64_t relsz;
+    uint64_t relent = 0x08;
+    uint64_t textrel = 0x00;
+    uint64_t flags = 0x0c;
+    uint64_t flags_1 = 0x08000001;
 
     std::vector<char> output;
 
-    inline void add(uint name, uint val) {
-        std::vector<char> v(8);
-        uint& v_name = (uint&)v[0];
-        uint& v_val  = (uint&)v[4];
+    inline void add(uint64_t name, uint64_t val) {
+        std::vector<char> v(16);
+        uint64_t& v_name = (uint64_t&)v[0];
+        uint64_t& v_val  = (uint64_t&)v[8];
         v_name = name;
         v_val  = val;
         
