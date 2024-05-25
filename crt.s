@@ -1,8 +1,8 @@
- .globl _start
+.globl _start
 _start:
- movl  $0, %ebp
+ xor   %rbp, %rbp
  call  main
  
- movl  %eax, %ebx
- movl  $1, %eax
- int   $0x80
+ movl  %eax, %edi
+ movl  $60, %eax
+ syscall

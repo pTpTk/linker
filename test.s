@@ -1,8 +1,8 @@
- .globl main
+.globl main
 main:
- push   %ebp
- movl   %esp, %ebp
+ push   %rbp
+ movq   %rsp, %rbp
  movl   $2, %eax
- movl   %ebp, %esp
- pop    %ebp
+ movq   %rbp, %rsp
+ pop    %rbp
  ret
