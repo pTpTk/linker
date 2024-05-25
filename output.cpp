@@ -65,7 +65,6 @@ void WriteInterp(std::ofstream& ofs) {
     std::string interp = "/lib64/ld-linux-x86-64.so.2";
     interp += '\0';
     int interp_size = interp.size();
-    printf("interp_size = %d\n", interp_size);
     int ph_interp_offset = FH_SIZE + PH_SIZE * e_phnum;
 
     ofs.seekp(ph_interp_offset);

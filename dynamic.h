@@ -31,7 +31,7 @@ class Dynamic
     uint64_t syment = 0x10;
     uint64_t pltgot;
     uint64_t pltrelsz;
-    uint64_t pltrel = 0x11;
+    uint64_t pltrel = 0x07;
     uint64_t jmprel;
     uint64_t rel;
     uint64_t relsz;
