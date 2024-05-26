@@ -14,18 +14,6 @@
     0x00, 0x00, 0x00, 0x00, 0x12, 0x00, 0x00, 0x00 \
 }
 
-#define PLT_0 \
-{ \
-    0xFF, 0xB3, 0x04, 0x00, 0x00, 0x00, 0xFF, 0xA3, \
-    0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 \
-}
-
-#define PLT_ENTRY \
-{ \
-    0xFF, 0xA3, 0x0C, 0x00, 0x00, 0x00, 0x68, 0x00, \
-    0x00, 0x00, 0x00, 0xE9, 0xE0, 0xFF, 0xFF, 0xFF \
-}
-
 extern std::vector<char> texts;
 extern std::unordered_multimap<std::string, uint> rels;
 extern std::unordered_set<std::string> refs;
@@ -54,11 +42,11 @@ void GetSymbols(LibFile& f) {
     auto& dynstr = f.dynstr;
     auto& symbols = f.symbols;
 
-    for(int i = 0x10; i < dynsym.size(); i+=0x10) {
+    for(int i = 0x18; i < dynsym.size(); i+=0x18) {
         uint32_t st_name  = (uint32_t&)dynsym[i];
-        uint32_t st_value = (uint32_t&)dynsym[i+0x4];
-        uint8_t  st_info  = (uint8_t&) dynsym[i+0xC];
-        uint16_t st_shndx = (uint16_t&)dynsym[i+0xE];
+        uint8_t  st_info  = (uint8_t&) dynsym[i+0x4];
+        uint16_t st_shndx = (uint16_t&)dynsym[i+0x6];
+        uint64_t st_value = (uint32_t&)dynsym[i+0x8];
 
         std::string name(dynstr.data() + st_name);
 
@@ -81,6 +69,45 @@ inline void align16(uint& offset) {
     }
 }
 
+std::vector<uint8_t> PLT_0
+{
+    0xFF, 0x35, 0x00, 0x00, 0x00, 0x00, /* push got[0x8] */
+    0xFF, 0x25, 0x00, 0x00, 0x00, 0x00, /* jmp got[0x10] */
+    0x0f, 0x1f, 0x40, 0x00              /* nop */
+};
+int& got_08_offset = (int&)PLT_0[2];
+int& got_10_offset = (int&)PLT_0[8];
+
+void plt_init(uint64_t got_addr) {
+    uint plt_addr = texts.size() + 0x1000;
+    align16(plt_addr);
+
+    got_08_offset = got_addr + 0x08 - plt_addr - 0x6;
+    got_10_offset = got_addr + 0x10 - plt_addr - 0xC;
+}
+
+std::vector<uint8_t> plt_entry
+{
+    0xFF, 0x25, 0x00, 0x00, 0x00, 0x00, /* jmp got[tag] */
+    0x68, 0x00, 0x00, 0x00, 0x00,       /* push sym_index*/
+    0xE9, 0xE0, 0xFF, 0xFF, 0xFF        /* jmp plt_0 */
+};
+int& got_tag_offset = (int&)plt_entry[2];
+int& sym_index      = (int&)plt_entry[7];
+int& plt_0_offset   = (int&)plt_entry[12];
+
+void plt_entry_init(uint64_t plt_addr, uint64_t got_addr) {
+    uint64_t plt_1_addr = plt_addr + 0x10;
+    uint64_t got_1_addr = got_addr + 0x18;
+    got_tag_offset = got_1_addr - plt_1_addr - 0x6;
+}
+
+void plt_entry_advance() {
+    got_tag_offset -= 0x8;
+    sym_index += 1;
+    plt_0_offset -= 0x10;
+}
+
 void WriteDyns(LibFile& f) {
     auto& fsymbols = f.symbols;
     std::vector<std::string> referred_symbols;
@@ -92,20 +119,17 @@ void WriteDyns(LibFile& f) {
                 break;
             }
         }
-        printf("\n");
     }
-
-    uint got_offset = 0x0c;
-    uint push_val = 0x00;
-    uint plt0_offset = -0x20;
 
     uint text_offset = texts.size() + 0x1000;
     align16(text_offset);
-    text_offset += 0x16;
+
+    uint got_entry = text_offset + 0x16;
 
     int sym_index = 1;
 
     uint got_entry_addr = 0x2000 + (17 << 3) + 0x0c;
+    plt_entry_init(text_offset, 0x2000);
 
     for(auto& s : referred_symbols) {
         // dynsym
@@ -120,17 +144,8 @@ void WriteDyns(LibFile& f) {
         refs.erase(s);
 
         // plt
-        std::vector<uint8_t> plt_entry = PLT_ENTRY;
-        uint& entry_got_offset  = (uint&)plt_entry[2];
-        uint& entry_push_val    = (uint&)plt_entry[7];
-        uint& entry_plt0_offset = (uint&)plt_entry[12];
-        entry_got_offset  = got_offset;
-        entry_push_val    = push_val;
-        entry_plt0_offset = plt0_offset;
-        got_offset  += 0x04;
-        push_val    += 0x08;
-        plt0_offset -= 0x10;
         merge(plt, plt_entry);
+        plt_entry_advance();
 
         // got
         got.emplace_back(text_offset);
@@ -178,6 +193,7 @@ void ProcessSharedLibs(std::vector<LibFile>& libs) {
 
     dynsym = std::vector<char>(0x10,0);
     dynstr += '\0';
+    plt_init(0x2000);
     plt = PLT_0;
     got = {0x2000, 0x00, 0x00};
     for(auto& f : libs) {

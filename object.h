@@ -10,11 +10,11 @@
 struct Symbol
 {
     std::string name;
-    int64_t val;
+    uint64_t val;
     bool defined;
     uint offset;
 
-    Symbol(std::string n, int64_t v)
+    Symbol(std::string n, uint64_t v)
     : name(n), val(v), defined(true), offset(0) {}
 
     Symbol(std::string n)
