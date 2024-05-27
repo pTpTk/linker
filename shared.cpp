@@ -10,22 +10,22 @@
 // Only support STT_FUNC type
 #define EMPTY_SYMTAB_EMTRY \
 { \
+    0x00, 0x00, 0x00, 0x00, 0x12, 0x00, 0x00, 0x00, \
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, \
-    0x00, 0x00, 0x00, 0x00, 0x12, 0x00, 0x00, 0x00 \
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 \
 }
 
 extern std::vector<char> texts;
-extern std::unordered_multimap<std::string, uint> rels;
+extern std::unordered_multimap<std::string, uint64_t> rels;
 extern std::unordered_set<std::string> refs;
 
 std::vector<char> dynsym;
 std::string dynstr;
 
 std::vector<uint8_t> plt;
-std::vector<uint> got;
+std::vector<uint64_t> got;
 
-std::vector<char> rel_dyn;
-std::vector<char> rel_plt;
+std::vector<char> rela_plt;
 
 Dynamic dynamic;
 
@@ -61,7 +61,8 @@ void GetSymbols(LibFile& f) {
     }
 }
 
-inline void align16(uint& offset) {
+template<typename T>
+inline void align16(T& offset) {
     if(offset & 0b1111) {
         offset >>= 4;
         ++offset;
@@ -121,15 +122,17 @@ void WriteDyns(LibFile& f) {
         }
     }
 
-    uint text_offset = texts.size() + 0x1000;
-    align16(text_offset);
+    uint64_t plt_offset = texts.size() + 0x1000;
+    align16(plt_offset);
 
-    uint got_entry = text_offset + 0x16;
+    uint64_t plt_entry_offset = plt_offset + 0x10;
+
+    uint got_entry = plt_offset + 0x16;
 
     int sym_index = 1;
 
-    uint got_entry_addr = 0x2000 + (17 << 3) + 0x0c;
-    plt_entry_init(text_offset, 0x2000);
+    uint got_entry_addr = 0x2000 + (12 << 4) + 0x0c;
+    plt_entry_init(plt_offset, 0x2000 + (12 << 4));
 
     for(auto& s : referred_symbols) {
         // dynsym
@@ -148,32 +151,32 @@ void WriteDyns(LibFile& f) {
         plt_entry_advance();
 
         // got
-        got.emplace_back(text_offset);
-        text_offset += 0x10;
+        got.emplace_back(got_entry);
+        got_entry += 0x10;
 
-        // rel.dyn
+        // apply plt relocations
         auto range = rels.equal_range(s);
         for(auto it = range.first; it != range.second; ++it) {
-            std::vector<char> rel_dyn_entry(8,0);
-            uint32_t& r_offset = (uint&)rel_dyn_entry[0];
-            char&  r_type      =        rel_dyn_entry[4];
-            char&  r_sym       =        rel_dyn_entry[5];
-            r_offset = it->second + 0x1000;
-            r_type   = 0x02;
-            r_sym    = sym_index;
-            merge(rel_dyn, rel_dyn_entry);
-        }
+            int& imm = (int&)texts[it->second];
+            int S = plt_entry_offset;
+            int P = it->second + sizeof(int);
+            imm = S - P;
 
-        // rel.plt
-        std::vector<char> rel_plt_entry(8,0);
-        uint32_t& r_offset = (uint&)rel_plt_entry[0];
-        char&  r_type      =        rel_plt_entry[4];
-        char&  r_sym       =        rel_plt_entry[5];
+            D("relocation @ 0x%lx, target addr 0x%lx\n", 
+                it->second, plt_entry_offset);
+        }
+        plt_entry_offset += 0x10;
+
+        // rela.plt
+        std::vector<char> rela_plt_entry(0x18,0);
+        uint64_t& r_offset = (uint64_t&)rela_plt_entry[0x00];
+        uint32_t& r_type   = (uint32_t&)rela_plt_entry[0x08];
+        uint32_t& r_sym    = (uint32_t&)rela_plt_entry[0x0C];
         r_offset = got_entry_addr;
         r_type   = 0x07;
         r_sym    = sym_index;
-        merge(rel_plt, rel_plt_entry);
-        got_entry_addr += 0x04;
+        merge(rela_plt, rela_plt_entry);
+        got_entry_addr += 0x08;
         sym_index += 1;
     }
 

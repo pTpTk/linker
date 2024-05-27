@@ -10,10 +10,9 @@
 extern std::vector<char> texts;
 extern std::vector<char> dynsym;
 extern std::string dynstr;
-extern std::vector<char> rel_dyn;
-extern std::vector<char> rel_plt;
+extern std::vector<char> rela_plt;
 extern std::vector<uint8_t> plt;
-extern std::vector<uint> got;
+extern std::vector<uint64_t> got;
 extern Dynamic dynamic;
 
 namespace {
@@ -113,17 +112,11 @@ void WriteMisc(std::ofstream& ofs) {
     dynamic.strsz = dynstr.size();
     ofs << dynstr;
 
-    align(ofs, 4);
-
-    dynamic.rel = ofs.tellp();
-    dynamic.relsz = rel_dyn.size();
-    ofs.write(rel_dyn.data(), rel_dyn.size());
-
-    align(ofs, 4);
+    align(ofs, 8);
 
     dynamic.jmprel = ofs.tellp();
-    dynamic.pltrelsz = rel_plt.size();
-    ofs.write(rel_plt.data(), rel_plt.size());
+    dynamic.pltrelsz = rela_plt.size();
+    ofs.write(rela_plt.data(), rela_plt.size());
 
     align(ofs, 4);
 
@@ -159,23 +152,23 @@ void WriteText(std::ofstream& ofs) {
 }
 
 void WriteLoad2(std::ofstream& ofs) {
-    dynamic.pltgot = 0x2000 + (17 << 3);
+    dynamic.pltgot = 0x2000 + (12 << 4);
     dynamic.generate();
     
     ofs.seekp(0x2000);
     ofs.write(dynamic.output.data(), dynamic.output.size());
-    ofs.write((char*)got.data(), got.size() << 2);
+    ofs.write((char*)got.data(), got.size() << 3);
 
     PH_DYNAMIC.p_type = 0x02;
     PH_DYNAMIC.p_offset = 0x2000;
     PH_DYNAMIC.p_vaddr  = 0x2000;
     PH_DYNAMIC.p_paddr  = 0x2000;
-    PH_DYNAMIC.p_filesz = 17 << 3;
-    PH_DYNAMIC.p_memsz  = 17 << 3;
+    PH_DYNAMIC.p_filesz = dynamic.output.size();
+    PH_DYNAMIC.p_memsz  = dynamic.output.size();
     PH_DYNAMIC.p_flags  = 0x06;
     PH_DYNAMIC.p_align  = 0x04;
 
-    uint load2_size = dynamic.output.size() + (got.size() << 2);
+    uint load2_size = dynamic.output.size() + (got.size() << 3);
 
     PH_LOAD_2.p_type = 0x01;
     PH_LOAD_2.p_offset = 0x2000;

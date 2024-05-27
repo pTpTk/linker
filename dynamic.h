@@ -16,11 +16,6 @@ class Dynamic
     uint64_t PLTRELSZ  = 0x00000002;
     uint64_t PLTREL    = 0x00000014;
     uint64_t JMPREL    = 0x00000017;
-    uint64_t REL       = 0x00000011;
-    uint64_t RELSZ     = 0x00000012;
-    uint64_t RELENT    = 0x00000013;
-    uint64_t TEXTREL   = 0x00000016;
-    uint64_t FLAGS     = 0x0000001e;
     uint64_t FLAGS_1   = 0x6ffffffb;
   public:
     uint64_t needed;
@@ -33,12 +28,7 @@ class Dynamic
     uint64_t pltrelsz;
     uint64_t pltrel = 0x07;
     uint64_t jmprel;
-    uint64_t rel;
-    uint64_t relsz;
-    uint64_t relent = 0x08;
-    uint64_t textrel = 0x00;
-    uint64_t flags = 0x0c;
-    uint64_t flags_1 = 0x08000001;
+    uint64_t flags_1 = 0x08000000;
 
     std::vector<char> output;
 
@@ -64,11 +54,6 @@ class Dynamic
         add(PLTRELSZ , pltrelsz);
         add(PLTREL   , pltrel);
         add(JMPREL   , jmprel);
-        add(REL      , rel);
-        add(RELSZ    , relsz);
-        add(RELENT   , relent);
-        add(TEXTREL  , textrel);
-        add(FLAGS    , flags);
         add(FLAGS_1  , flags_1);
         add(0, 0);
     }

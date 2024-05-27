@@ -10,7 +10,7 @@
 
 std::vector<char> texts;
 // vector of dyn relocations
-std::unordered_multimap<std::string, uint> rels;
+std::unordered_multimap<std::string, uint64_t> rels;
 std::unordered_set<std::string> refs;
 
 namespace {
@@ -60,10 +60,10 @@ void Relocate(ObjectFile& f) {
     std::vector<Symbol>& symbols = f.symbols;
 
     for(int i = 0; i < rela_text.size(); i+=0x18) {
-        uint64_t r_offset = (uint64_t)rela_text[i];
-        uint32_t r_type   = (uint32_t)rela_text[i+0x08];
-        uint32_t r_sym    = (uint32_t)rela_text[i+0x0C];
-        uint64_t r_addend = (uint64_t)rela_text[i+0x10];
+        uint64_t r_offset = (uint64_t&)rela_text[i];
+        uint32_t r_type   = (uint32_t&)rela_text[i+0x08];
+        uint32_t r_sym    = (uint32_t&)rela_text[i+0x0C];
+        uint64_t r_addend = (uint64_t&)rela_text[i+0x10];
 
         assert(r_type == 4);
         D("r_offset = %lx, r_sym = %x\n", r_offset, r_sym);
