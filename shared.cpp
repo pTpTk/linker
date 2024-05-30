@@ -125,13 +125,13 @@ void WriteDyns(LibFile& f) {
     uint64_t plt_offset = texts.size() + 0x1000;
     align16(plt_offset);
 
-    uint64_t plt_entry_offset = plt_offset + 0x10;
+    uint64_t plt_entry_offset = plt_offset + 0x10 - 0x1000;
 
     uint got_entry = plt_offset + 0x16;
 
     int sym_index = 1;
 
-    uint got_entry_addr = 0x2000 + (12 << 4) + 0x0c;
+    uint got_entry_addr = 0x2000 + (12 << 4) + 0x18;
     plt_entry_init(plt_offset, 0x2000 + (12 << 4));
 
     for(auto& s : referred_symbols) {
@@ -194,9 +194,9 @@ void ProcessSharedLibs(std::vector<LibFile>& libs) {
         GetSymbols(f);
     }
 
-    dynsym = std::vector<char>(0x10,0);
+    dynsym = std::vector<char>(0x18,0);
     dynstr += '\0';
-    plt_init(0x2000);
+    plt_init(0x2000 + (12 << 4));
     plt = PLT_0;
     got = {0x2000, 0x00, 0x00};
     for(auto& f : libs) {

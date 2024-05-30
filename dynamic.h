@@ -23,7 +23,7 @@ class Dynamic
     uint64_t strtab;
     uint64_t symtab;
     uint64_t strsz;
-    uint64_t syment = 0x10;
+    uint64_t syment = 0x18;
     uint64_t pltgot;
     uint64_t pltrelsz;
     uint64_t pltrel = 0x07;
